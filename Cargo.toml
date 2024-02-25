@@ -1,0 +1,30 @@
+[package]
+name = "archiver"
+version = "0.1.0"
+authors = ["Tree Xie <tree.xie@outlook.com>"]
+edition = "2021"
+keywords = ["archiver", "compress"]
+license = "Apache-2.0"
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-compression = { version = "0.4.6", features = ["gzip", "tokio"] }
+glob = "0.3.1"
+snafu = "0.8.0"
+tempfile = "3.10.0"
+time = "0.3.34"
+tokio = { version = "1.35.1", features = [
+    "macros",
+    "rt",
+    "rt-multi-thread",
+    "fs",
+] }
+tokio-tar = "0.3.1"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["local-time"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
