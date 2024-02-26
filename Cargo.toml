@@ -10,8 +10,9 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-compression = { version = "0.4.6", features = ["gzip", "tokio"] }
+async-compression = { version = "0.4.6", features = ["gzip","zstd","tokio"] }
 glob = "0.3.1"
+uuid = { version = "1.7.0", features = ["v7", "fast-rng", "macro-diagnostics"] }
 snafu = "0.8.0"
 tempfile = "3.10.0"
 time = "0.3.34"
