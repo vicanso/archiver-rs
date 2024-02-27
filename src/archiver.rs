@@ -3,6 +3,7 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::fs::File;
 use tokio_tar::Builder;
+use tracing::info;
 use uuid::{NoContext, Timestamp, Uuid};
 
 use super::compression;
@@ -12,7 +13,8 @@ const GZIP: &str = "gz";
 const ZSTD: &str = "zst";
 const BROTLI: &str = "br";
 const LZ4: &str = "lz4";
-const SNAPPY: &str = "snappy";
+const SNAPPY: &str = "sz";
+const DEFLATE: &str = "zip";
 
 fn uuid() -> String {
     let d = SystemTime::now()
@@ -23,7 +25,7 @@ fn uuid() -> String {
 }
 
 pub async fn archive(original: &str, target: &str, level: i32) -> Result<(), Error> {
-    let dir = tempfile::tempdir().map_err(|err| Error::Io { source: err })?;
+    let dir = tempfile::tempdir()?;
 
     let filename = Path::new(&target)
         .file_name()
@@ -39,12 +41,12 @@ pub async fn archive(original: &str, target: &str, level: i32) -> Result<(), Err
     }
     let compress_type = arr[1];
 
-    let file = File::create(target)
-        .await
-        .map_err(|err| Error::Io { source: err })?;
+    let file = File::create(target).await?;
     let mut a = Builder::new(file);
+    let mut file_count = 0;
+    let start = SystemTime::now();
 
-    for suffix in ["/*", "/*/*"] {
+    for suffix in ["/*", "/*/*", "/**/*"] {
         for entry in
             glob(&(original.to_string() + suffix)).map_err(|err| Error::Pattern { source: err })?
         {
@@ -55,31 +57,34 @@ pub async fn archive(original: &str, target: &str, level: i32) -> Result<(), Err
             if file_path.is_dir() {
                 continue;
             }
+
             let file = dir.path().join(uuid());
 
             match compress_type {
-                GZIP => {
-                    compression::gzip(&file_path, &file, level).await?;
-                }
-                ZSTD => {
-                    compression::zstd(&file_path, &file, level).await?;
-                }
-                _ => {
-                    return Err(Error::InvalidCompression {
-                        compression: compress_type.to_string(),
-                    })
-                }
-            }
-            a.append_file(
-                filename,
-                &mut File::open(&file)
-                    .await
-                    .map_err(|err| Error::Io { source: err })?,
-            )
-            .await
-            .map_err(|err| Error::Io { source: err })?;
+                GZIP => compression::gzip_encode(&file_path, &file, level).await,
+                ZSTD => compression::zstd_encode(&file_path, &file, level).await,
+                BROTLI => compression::brotli_encode(&file_path, &file, level).await,
+                SNAPPY => compression::snappy_encode(&file_path, &file).await,
+                LZ4 => compression::lz4_encode(&file_path, &file).await,
+                DEFLATE => compression::deflate_encode(&file_path, &file, level).await,
+                _ => Err(Error::InvalidCompression {
+                    compression: compress_type.to_string(),
+                }),
+            }?;
+            a.append_file(filename, &mut File::open(&file).await?)
+                .await?;
+            file_count += 1;
         }
     }
+    let duration = if let Ok(d) = SystemTime::now().duration_since(start) {
+        humantime::format_duration(d).to_string()
+    } else {
+        "".to_string()
+    };
+    info!(
+        compression = compress_type,
+        level, file_count, duration, "archive done",
+    );
 
     Ok(())
 }

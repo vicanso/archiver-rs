@@ -1,6 +1,12 @@
+use clap::Parser;
+use path_absolutize::*;
+use std::path::Path;
+use substring::Substring;
+
 use std::{env, str::FromStr};
+use tracing::error;
 use tracing::Level;
-use tracing::{error, info};
+
 use tracing_subscriber::FmtSubscriber;
 
 use crate::error::Error;
@@ -8,6 +14,21 @@ use crate::error::Error;
 mod archiver;
 mod compression;
 mod error;
+
+/// A tool for archive file as tar, but it will compress each file first.
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Source path to archive
+    #[arg(short, long)]
+    source: String,
+    /// Archive file save as
+    #[arg(short, long)]
+    target: String,
+    /// Level of compress
+    #[arg(short, long, default_value_t = 9)]
+    level: i32,
+}
 
 fn init_logger() {
     let mut level = Level::INFO;
@@ -29,26 +50,27 @@ fn init_logger() {
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 }
 
+fn resolve_path(path: &str) -> String {
+    let mut p = path.to_string();
+    if p.starts_with('~') {
+        if let Some(home) = dirs::home_dir() {
+            p = home.to_string_lossy().to_string() + p.substring(1, p.len());
+        };
+    }
+    if let Ok(p) = Path::new(&p).absolutize() {
+        p.to_string_lossy().to_string()
+    } else {
+        p
+    }
+}
+
 #[tokio::main]
 async fn run() -> Result<(), Error> {
-    let mut original = "".to_string();
-    let mut target = "".to_string();
-    for (index, argument) in env::args().enumerate() {
-        if index == 1 {
-            original = argument;
-        } else if index == 2 {
-            target = argument;
-        }
-    }
-    if original.is_empty() {
-        return Err(Error::InvalidArg { path: original });
-    }
-    if target.is_empty() {
-        return Err(Error::InvalidArg {
-            path: target.clone(),
-        });
-    }
-    archiver::archive(&original, &target, 9).await
+    let args = Args::parse();
+    let source = resolve_path(&args.source);
+    let target = resolve_path(&args.target);
+
+    archiver::archive(&source, &target, args.level).await
 }
 
 fn main() {
@@ -59,7 +81,7 @@ fn main() {
         std::process::exit(1);
     }));
     init_logger();
-    if let Err(err) = run() {
-        println!("{err:?}");
+    if let Err(e) = run() {
+        error!(message = e.to_string(), "archive fail");
     }
 }

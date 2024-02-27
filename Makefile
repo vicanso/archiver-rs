@@ -4,7 +4,8 @@ lint:
 fmt:
 	cargo fmt
 
-gztar:
-	cargo run -- ~/tmp/fonts ~/tmp/fonts.gz.tar
-targz:
-	cargo run -- ~/tmp/fonts ~/tmp/fonts.tar.gz
+dev:
+	cargo run -- --source=~/tmp/fonts --target=~/tmp/fonts.gz.tar
+
+release:
+	cargo build --release
