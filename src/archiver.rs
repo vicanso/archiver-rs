@@ -21,34 +21,44 @@ fn uuid() -> String {
     Uuid::new_v7(ts).to_string()
 }
 
-pub async fn archive(original: &str, target: &str, level: i32) -> Result<(), Error> {
+pub struct ArchiveParams {
+    pub source: String,
+    pub target: String,
+    pub level: i32,
+    pub pattern: String,
+}
+
+pub async fn archive(params: ArchiveParams) -> Result<(), Error> {
     let dir = tempfile::tempdir()?;
+    let source = params.source;
+    let target = params.target;
+    let level = params.level;
 
     let filename = Path::new(&target)
         .file_name()
         .ok_or(Error::InvalidArg {
-            path: target.to_string(),
+            path: target.clone(),
         })?
         .to_string_lossy();
     let arr: Vec<&str> = filename.split('.').collect();
     if arr.len() < 3 || arr[2] != "tar" {
         return Err(Error::InvalidArg {
-            path: target.to_string(),
+            path: target.clone(),
         });
     }
     let compress_type = arr[1];
 
-    let file = File::create(target).await?;
+    let file = File::create(&target).await?;
     let mut a = Builder::new(file);
     let mut file_count = 0;
     let start = SystemTime::now();
 
-    for entry in
-        glob(&(original.to_string() + "/**/*")).map_err(|err| Error::Pattern { source: err })?
+    for entry in glob(&format!("{source}{}", params.pattern))
+        .map_err(|err| Error::Pattern { source: err })?
     {
         let file_path = entry.map_err(|err| Error::Glob { source: err })?;
         let filename = file_path
-            .strip_prefix(original)
+            .strip_prefix(&source)
             .map_err(|err| Error::StripPrefix { source: err })?;
         if file_path.is_dir() {
             continue;
@@ -77,7 +87,7 @@ pub async fn archive(original: &str, target: &str, level: i32) -> Result<(), Err
         duration = Some(humantime::format_duration(d).to_string());
     };
     let mut file_size = None;
-    if let Ok(file) = File::open(target).await {
+    if let Ok(file) = File::open(&target).await {
         if let Ok(meta) = file.metadata().await {
             file_size = Some(bytesize::ByteSize(meta.len()).to_string());
         }

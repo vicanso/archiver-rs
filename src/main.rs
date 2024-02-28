@@ -28,6 +28,9 @@ struct Args {
     /// Level of compress
     #[arg(short, long, default_value_t = 9)]
     level: i32,
+    /// Glob file pattern
+    #[arg(short, long, default_value = "/**/*")]
+    pattern: String,
 }
 
 fn init_logger() {
@@ -70,7 +73,13 @@ async fn run() -> Result<(), Error> {
     let source = resolve_path(&args.source);
     let target = resolve_path(&args.target);
 
-    archiver::archive(&source, &target, args.level).await
+    archiver::archive(archiver::ArchiveParams {
+        source,
+        target,
+        level: args.level,
+        pattern: args.pattern,
+    })
+    .await
 }
 
 fn main() {
