@@ -21,7 +21,5 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - name: build-web
-        run: make build-web
       - name: release
         run: make release
