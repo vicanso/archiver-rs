@@ -16,8 +16,6 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      - name: setup node
-        uses: actions/setup-node@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable

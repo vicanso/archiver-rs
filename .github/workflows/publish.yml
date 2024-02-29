@@ -13,8 +13,6 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: setup node
-        uses: actions/setup-node@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -40,8 +38,6 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-      - name: setup node
-        uses: actions/setup-node@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -56,8 +52,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: setup node
-        uses: actions/setup-node@v4
       - name: release
         uses: addnab/docker-run-action@v3
         with:
@@ -74,8 +68,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: setup node
-        uses: actions/setup-node@v4
       - name: release
         uses: addnab/docker-run-action@v3
         with:

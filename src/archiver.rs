@@ -2,7 +2,8 @@ use glob::glob;
 use std::path::Path;
 use std::time::SystemTime;
 use tokio::fs::File;
-use tokio_tar::Builder;
+use tokio_stream::StreamExt;
+use tokio_tar::{Archive, Builder};
 use tracing::info;
 use uuid::{NoContext, Timestamp, Uuid};
 
@@ -26,6 +27,22 @@ pub struct ArchiveParams {
     pub target: String,
     pub level: i32,
     pub pattern: String,
+}
+
+pub async fn ls(target: &str) -> Result<(), Error> {
+    let file = File::open(target).await?;
+    let mut r = Archive::new(file);
+    let mut entries = r.entries()?;
+    while let Some(file) = entries.next().await {
+        let f = file?;
+        let size = if let Ok(size) = f.header().size() {
+            bytesize::ByteSize(size).to_string()
+        } else {
+            "--".to_string()
+        };
+        println!("{} {size}", f.path()?.display(),);
+    }
+    Ok(())
 }
 
 pub async fn archive(params: ArchiveParams) -> Result<(), Error> {

@@ -21,16 +21,19 @@ mod error;
 struct Args {
     /// Source path to archive
     #[arg(short, long)]
-    source: String,
+    source: Option<String>,
     /// Archive file save as
     #[arg(short, long)]
-    target: String,
+    target: Option<String>,
     /// Level of compress
     #[arg(short, long, default_value_t = 9)]
     level: i32,
     /// Glob file pattern
     #[arg(short, long, default_value = "/**/*")]
     pattern: String,
+    /// Run mode, "archive", "ls"
+    #[arg(short, long, default_value = "archive")]
+    mode: String,
 }
 
 fn init_logger() {
@@ -70,16 +73,20 @@ fn resolve_path(path: &str) -> String {
 #[tokio::main]
 async fn run() -> Result<(), Error> {
     let args = Args::parse();
-    let source = resolve_path(&args.source);
-    let target = resolve_path(&args.target);
+    let source = resolve_path(&args.source.unwrap_or_default());
+    let target = resolve_path(&args.target.unwrap_or_default());
 
-    archiver::archive(archiver::ArchiveParams {
-        source,
-        target,
-        level: args.level,
-        pattern: args.pattern,
-    })
-    .await
+    if args.mode == "ls" {
+        archiver::ls(&target).await
+    } else {
+        archiver::archive(archiver::ArchiveParams {
+            source,
+            target,
+            level: args.level,
+            pattern: args.pattern,
+        })
+        .await
+    }
 }
 
 fn main() {

@@ -98,6 +98,7 @@ dependencies = [
  "tempfile",
  "time",
  "tokio",
+ "tokio-stream",
  "tokio-tar",
  "tracing",
  "tracing-subscriber",
