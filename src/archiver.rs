@@ -1,4 +1,6 @@
+use chrono::{DateTime, Local};
 use glob::glob;
+use pad::{Alignment, PadStr};
 use std::path::Path;
 use std::time::SystemTime;
 use tokio::fs::File;
@@ -33,15 +35,39 @@ pub async fn ls(target: &str) -> Result<(), Error> {
     let file = File::open(target).await?;
     let mut r = Archive::new(file);
     let mut entries = r.entries()?;
+    let mut lines = vec![];
     while let Some(file) = entries.next().await {
         let f = file?;
         let size = if let Ok(size) = f.header().size() {
             bytesize::ByteSize(size).to_string()
         } else {
             "--".to_string()
+        }
+        .pad_to_width_with_alignment(8, Alignment::Right);
+        let mode = if let Ok(mode) = f.header().mode() {
+            unix_mode::to_string(mode)
+        } else {
+            "--".to_string()
         };
-        println!("{} {size}", f.path()?.display(),);
+        let mtime = if let Ok(mtime) = f.header().mtime() {
+            let mtime: DateTime<Local> = DateTime::from_timestamp(mtime as i64, 0)
+                .unwrap_or_default()
+                .into();
+            mtime.naive_local().to_string()
+        } else {
+            "--".to_string()
+        }
+        .pad_to_width_with_alignment(19, Alignment::Right);
+
+        lines.push(format!("{mode}  {size}  {mtime}  {}", f.path()?.display(),));
     }
+
+    println!("total {}", lines.len());
+
+    for line in lines {
+        println!("{line}");
+    }
+
     Ok(())
 }
 

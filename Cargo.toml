@@ -40,6 +40,10 @@ lz4_flex = "0.11.2"
 humantime = "2.1.0"
 bytesize = "1.3.0"
 tokio-stream = "0.1.14"
+pad = "0.1.6"
+unix_mode = "0.1.4"
+filetime = "0.2.23"
+chrono = "0.4.34"
 
 
 [profile.release]

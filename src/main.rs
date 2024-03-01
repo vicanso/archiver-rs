@@ -11,12 +11,16 @@ use tracing_subscriber::FmtSubscriber;
 
 use crate::error::Error;
 
+static LS_MODE: &str = "ls";
+
 mod archiver;
 mod compression;
 mod error;
 
 /// A tool for archive file as tar, but it will compress each file first.
-#[derive(Parser, Debug)]
+/// Simple way for gz.tar, archiver ~/files ~/files.gz.tar.
+/// Simple way for ls, archiver ~/files.gz.tar
+#[derive(Parser, Debug, Default)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Source path to archive
@@ -70,13 +74,46 @@ fn resolve_path(path: &str) -> String {
     }
 }
 
+fn parse_args() -> Args {
+    let arguments: Vec<String> = env::args().skip(1).collect();
+    let count = arguments
+        .iter()
+        .filter(|item| item.starts_with('-'))
+        .count();
+    if count == 0 {
+        if arguments.len() == 1 {
+            return Args {
+                mode: LS_MODE.to_string(),
+                target: Some(arguments[0].to_string()),
+                ..Default::default()
+            };
+        }
+        if arguments.len() == 2 {
+            let mut target = arguments[0].to_string();
+            let mut source = arguments[1].to_string();
+            if arguments[1].ends_with(".tar") {
+                target = arguments[1].to_string();
+                source = arguments[0].to_string();
+            }
+            return Args {
+                target: Some(target),
+                source: Some(source),
+                level: 9,
+                pattern: "/**/*".to_string(),
+                ..Default::default()
+            };
+        }
+    }
+    Args::parse()
+}
+
 #[tokio::main]
 async fn run() -> Result<(), Error> {
-    let args = Args::parse();
+    let args = parse_args();
     let source = resolve_path(&args.source.unwrap_or_default());
     let target = resolve_path(&args.target.unwrap_or_default());
 
-    if args.mode == "ls" {
+    if args.mode == LS_MODE {
         archiver::ls(&target).await
     } else {
         archiver::archive(archiver::ArchiveParams {

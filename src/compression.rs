@@ -1,5 +1,6 @@
 use async_compression::tokio::write::{BrotliEncoder, DeflateEncoder, GzipEncoder, ZstdEncoder};
 use async_compression::Level;
+use filetime::{set_file_mtime, FileTime};
 use lz4_flex::block::compress_prepend_size;
 use std::path::PathBuf;
 use tokio::fs;
@@ -16,6 +17,13 @@ async fn write_file(target: &PathBuf, data: &[u8]) -> Result<(), Error> {
     Ok(())
 }
 
+async fn copy_mtime(file: &PathBuf, target: &PathBuf) -> Result<(), Error> {
+    let f = File::open(file).await?;
+    let meta = f.metadata().await?;
+    set_file_mtime(target, FileTime::from_last_modification_time(&meta))?;
+    Ok(())
+}
+
 async fn compress<'a, W>(file: &PathBuf, writer: &'a mut W) -> Result<u64, Error>
 where
     W: AsyncWrite + Unpin + ?Sized,
@@ -29,37 +37,43 @@ pub async fn gzip_encode(file: &PathBuf, target: &PathBuf, level: i32) -> Result
     let mut w = GzipEncoder::with_quality(Vec::new(), Level::Precise(level));
     compress(file, &mut w).await?;
     w.shutdown().await?;
-    write_file(target, &w.into_inner()).await
+    let _ = write_file(target, &w.into_inner()).await;
+    copy_mtime(file, target).await
 }
 
 pub async fn zstd_encode(file: &PathBuf, target: &PathBuf, level: i32) -> Result<(), Error> {
     let mut w = ZstdEncoder::with_quality(Vec::new(), Level::Precise(level));
     compress(file, &mut w).await?;
     w.shutdown().await?;
-    write_file(target, &w.into_inner()).await
+    let _ = write_file(target, &w.into_inner()).await;
+    copy_mtime(file, target).await
 }
 
 pub async fn brotli_encode(file: &PathBuf, target: &PathBuf, level: i32) -> Result<(), Error> {
     let mut w = BrotliEncoder::with_quality(Vec::new(), Level::Precise(level));
     compress(file, &mut w).await?;
     w.shutdown().await?;
-    write_file(target, &w.into_inner()).await
+    let _ = write_file(target, &w.into_inner()).await;
+    copy_mtime(file, target).await
 }
 
 pub async fn deflate_encode(file: &PathBuf, target: &PathBuf, level: i32) -> Result<(), Error> {
     let mut w = DeflateEncoder::with_quality(Vec::new(), Level::Precise(level));
     compress(file, &mut w).await?;
     w.shutdown().await?;
-    write_file(target, &w.into_inner()).await
+    let _ = write_file(target, &w.into_inner()).await;
+    copy_mtime(file, target).await
 }
 
 pub async fn snappy_encode(file: &PathBuf, target: &PathBuf) -> Result<(), Error> {
     let buf = fs::read(file).await?;
     let mut w = snap::raw::Encoder::new();
-    write_file(target, &w.compress_vec(&buf)?).await
+    let _ = write_file(target, &w.compress_vec(&buf)?).await;
+    copy_mtime(file, target).await
 }
 
 pub async fn lz4_encode(file: &PathBuf, target: &PathBuf) -> Result<(), Error> {
     let buf = fs::read(file).await?;
-    write_file(target, &compress_prepend_size(&buf)).await
+    let _ = write_file(target, &compress_prepend_size(&buf)).await;
+    copy_mtime(file, target).await
 }
