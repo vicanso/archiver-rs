@@ -75,36 +75,27 @@ fn resolve_path(path: &str) -> String {
 }
 
 fn parse_args() -> Args {
-    let arguments: Vec<String> = env::args().skip(1).collect();
-    let count = arguments
-        .iter()
-        .filter(|item| item.starts_with('-'))
-        .count();
-    if count == 0 {
-        if arguments.len() == 1 {
-            return Args {
-                mode: LS_MODE.to_string(),
-                target: Some(arguments[0].to_string()),
-                ..Default::default()
-            };
-        }
-        if arguments.len() == 2 {
-            let mut target = arguments[0].to_string();
-            let mut source = arguments[1].to_string();
-            if arguments[1].ends_with(".tar") {
-                target = arguments[1].to_string();
-                source = arguments[0].to_string();
+    let arguments: Vec<String> = env::args().collect();
+    let mut args = vec![];
+    for (index, item) in arguments.iter().enumerate() {
+        if index != 0 && !item.starts_with('-') {
+            // 如果上一个参数不是以-开始，而且没有=
+            let prev = arguments[index - 1].clone();
+            if !prev.starts_with('-') && !prev.contains('=') {
+                if item.ends_with(".tar") {
+                    args.push("-t");
+                } else {
+                    args.push("-s");
+                }
             }
-            return Args {
-                target: Some(target),
-                source: Some(source),
-                level: 9,
-                pattern: "/**/*".to_string(),
-                ..Default::default()
-            };
         }
+        args.push(item)
     }
-    Args::parse()
+    let mut args = Args::parse_from(args);
+    if args.source.clone().unwrap_or_default().is_empty() {
+        args.mode = LS_MODE.to_string()
+    }
+    args
 }
 
 #[tokio::main]
