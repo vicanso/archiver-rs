@@ -61,6 +61,9 @@ fn init_logger() {
 }
 
 fn resolve_path(path: &str) -> String {
+    if path.is_empty() {
+        return "".to_string();
+    }
     let mut p = path.to_string();
     if p.starts_with('~') {
         if let Some(home) = dirs::home_dir() {

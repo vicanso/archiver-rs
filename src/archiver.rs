@@ -32,6 +32,11 @@ pub struct ArchiveParams {
 }
 
 pub async fn ls(target: &str) -> Result<(), Error> {
+    if target.is_empty() {
+        return Err(Error::InvalidArg {
+            path: target.to_string(),
+        });
+    }
     let file = File::open(target).await?;
     let mut r = Archive::new(file);
     let mut entries = r.entries()?;
@@ -72,6 +77,16 @@ pub async fn ls(target: &str) -> Result<(), Error> {
 }
 
 pub async fn archive(params: ArchiveParams) -> Result<(), Error> {
+    if params.target.is_empty() {
+        return Err(Error::InvalidArg {
+            path: params.target,
+        });
+    }
+    if params.source.is_empty() {
+        return Err(Error::InvalidArg {
+            path: params.source,
+        });
+    }
     let dir = tempfile::tempdir()?;
     let source = params.source;
     let target = params.target;
