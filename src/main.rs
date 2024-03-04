@@ -11,7 +11,8 @@ use tracing_subscriber::FmtSubscriber;
 
 use crate::error::Error;
 
-static LS_MODE: &str = "ls";
+const LS_MODE: &str = "ls";
+const UNARCHIVE_MODE: &str = "unarchive";
 
 mod archiver;
 mod compression;
@@ -35,9 +36,15 @@ struct Args {
     /// Glob file pattern
     #[arg(short, long, default_value = "/**/*")]
     pattern: String,
-    /// Run mode, "archive", "ls"
+    /// Run mode, "archive", "ls", "unarchive"
     #[arg(short, long, default_value = "archive")]
     mode: String,
+    /// Unarchive all files to output directory
+    #[arg(short, long)]
+    output: Option<String>,
+    /// Unarchive filter file
+    #[arg(short, long)]
+    file: Option<String>,
 }
 
 fn init_logger() {
@@ -95,7 +102,7 @@ fn parse_args() -> Args {
         args.push(item)
     }
     let mut args = Args::parse_from(args);
-    if args.source.clone().unwrap_or_default().is_empty() {
+    if args.mode != UNARCHIVE_MODE && args.source.clone().unwrap_or_default().is_empty() {
         args.mode = LS_MODE.to_string()
     }
     args
@@ -106,17 +113,27 @@ async fn run() -> Result<(), Error> {
     let args = parse_args();
     let source = resolve_path(&args.source.unwrap_or_default());
     let target = resolve_path(&args.target.unwrap_or_default());
+    let output = resolve_path(&args.output.unwrap_or_default());
 
-    if args.mode == LS_MODE {
-        archiver::ls(&target).await
-    } else {
-        archiver::archive(archiver::ArchiveParams {
-            source,
-            target,
-            level: args.level,
-            pattern: args.pattern,
-        })
-        .await
+    match args.mode.as_str() {
+        LS_MODE => archiver::ls(&target).await,
+        UNARCHIVE_MODE => {
+            archiver::unarchive(archiver::UnarchiveParams {
+                source: target,
+                target: output,
+                file: args.file.unwrap_or_default(),
+            })
+            .await
+        }
+        _ => {
+            archiver::archive(archiver::ArchiveParams {
+                source,
+                target,
+                level: args.level,
+                pattern: args.pattern,
+            })
+            .await
+        }
     }
 }
 

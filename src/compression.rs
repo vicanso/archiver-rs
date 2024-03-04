@@ -1,4 +1,6 @@
-use async_compression::tokio::write::{BrotliEncoder, DeflateEncoder, GzipEncoder, ZstdEncoder};
+use async_compression::tokio::write::{
+    BrotliEncoder, DeflateEncoder, GzipDecoder, GzipEncoder, ZstdEncoder,
+};
 use async_compression::Level;
 use filetime::{set_file_mtime, FileTime};
 use lz4_flex::block::compress_prepend_size;
@@ -76,4 +78,21 @@ pub async fn lz4_encode(file: &PathBuf, target: &PathBuf) -> Result<(), Error> {
     let buf = fs::read(file).await?;
     let _ = write_file(target, &compress_prepend_size(&buf)).await;
     copy_mtime(file, target).await
+}
+
+pub async fn gzip_decode(
+    file: &mut tokio_tar::Entry<tokio_tar::Archive<tokio::fs::File>>,
+    target: &PathBuf,
+) -> Result<(), Error> {
+    let mut w = GzipDecoder::new(Vec::new());
+    let _ = copy(file, &mut w).await?;
+    let _ = write_file(target, &w.into_inner()).await;
+    // let meta = file.header().g.await?;
+    // set_file_mtime(target, FileTime::from_last_modification_time(&meta))?;
+
+    // compress(file, &mut w).await?;
+    // w.shutdown().await?;
+    // let _ = write_file(target, &w.into_inner()).await;
+    // copy_mtime(file, target).await
+    Ok(())
 }

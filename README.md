@@ -15,7 +15,7 @@ archiver ~/tmp/fonts ~/tmp/fonts.gz.tar
 
 Archive files using zst:
 
-````bash
+```bash
 archiver ~/tmp/fonts ~/tmp/fonts.zst.tar
 ```
 
@@ -23,4 +23,4 @@ List files from archive file:
 
 ```bash
 archiver ~/tmp/fonts.gz.tar
-````
+```
