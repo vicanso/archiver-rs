@@ -6,7 +6,7 @@ use std::time::SystemTime;
 use tokio::fs::File;
 use tokio_stream::StreamExt;
 use tokio_tar::{Archive, Builder};
-use tracing::info;
+use tracing::{debug, info};
 use uuid::{NoContext, Timestamp, Uuid};
 
 use super::compression;
@@ -95,8 +95,6 @@ pub async fn unarchive(params: UnarchiveParams) -> Result<(), Error> {
     }
     let compress_type = arr[arr.len() - 2];
 
-    println!("{compress_type:?}");
-
     let file = File::open(&params.source).await?;
     let mut r = Archive::new(file);
     let mut entries = r.entries()?;
@@ -109,25 +107,33 @@ pub async fn unarchive(params: UnarchiveParams) -> Result<(), Error> {
     } else {
         Path::new(&params.target)
     };
-    println!("{output:?}");
     while let Some(file) = entries.next().await {
         let mut f = file?;
+        let path = f.path()?;
+        if !params.file.is_empty() && params.file != path.to_string_lossy() {
+            continue;
+        }
 
-        let filename = output.join(f.path()?);
-        compression::gzip_decode(&mut f, &filename).await?;
-        println!("{filename:?}");
-
-        // match compress_type {
-        //     GZIP => compression::gzip_encode(&file_path, &file, level).await,
-        //     ZSTD => compression::zstd_encode(&file_path, &file, level).await,
-        //     BROTLI => compression::brotli_encode(&file_path, &file, level).await,
-        //     SNAPPY => compression::snappy_encode(&file_path, &file).await,
-        //     LZ4 => compression::lz4_encode(&file_path, &file).await,
-        //     DEFLATE => compression::deflate_encode(&file_path, &file, level).await,
-        //     _ => Err(Error::InvalidCompression {
-        //         compression: compress_type.to_string(),
-        //     }),
-        // }?;
+        let file_path = output.join(path);
+        debug!(
+            file = file_path.to_string_lossy().to_string(),
+            "start to decode"
+        );
+        let filename = &Some(file_path);
+        let buf = match compress_type {
+            GZIP => compression::gzip_decode(&mut f, filename).await,
+            ZSTD => compression::zstd_decode(&mut f, filename).await,
+            BROTLI => compression::brotli_decode(&mut f, filename).await,
+            SNAPPY => compression::snappy_decode(&mut f, filename).await,
+            LZ4 => compression::lz4_decode(&mut f, filename).await,
+            DEFLATE => compression::deflate_decode(&mut f, filename).await,
+            _ => Err(Error::InvalidCompression {
+                compression: compress_type.to_string(),
+            }),
+        }?;
+        if !params.file.is_empty() {
+            println!("{}", std::string::String::from_utf8_lossy(&buf));
+        }
     }
 
     Ok(())
@@ -180,8 +186,12 @@ pub async fn archive(params: ArchiveParams) -> Result<(), Error> {
         }
 
         let file = dir.path().join(uuid());
+        debug!(
+            file = filename.to_string_lossy().to_string(),
+            "start to encode"
+        );
 
-        match compress_type {
+        let size = match compress_type {
             GZIP => compression::gzip_encode(&file_path, &file, level).await,
             ZSTD => compression::zstd_encode(&file_path, &file, level).await,
             BROTLI => compression::brotli_encode(&file_path, &file, level).await,
@@ -192,6 +202,11 @@ pub async fn archive(params: ArchiveParams) -> Result<(), Error> {
                 compression: compress_type.to_string(),
             }),
         }?;
+        debug!(
+            file = filename.to_string_lossy().to_string(),
+            size = bytesize::ByteSize(size as u64).to_string(),
+            "encode done"
+        );
         a.append_file(filename, &mut File::open(&file).await?)
             .await?;
         file_count += 1;

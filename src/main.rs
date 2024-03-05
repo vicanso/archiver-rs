@@ -146,6 +146,6 @@ fn main() {
     }));
     init_logger();
     if let Err(e) = run() {
-        error!(message = e.to_string(), "archive fail");
+        error!(message = e.to_string());
     }
 }

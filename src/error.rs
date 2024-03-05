@@ -16,6 +16,10 @@ pub enum Error {
     InvalidCompression { compression: String },
     #[snafu(display("Snappy {source}"))]
     Snappy { source: snap::Error },
+    #[snafu(display("Lz4 decompress {source}"))]
+    Lz4Decompress {
+        source: lz4_flex::block::DecompressError,
+    },
 }
 
 impl From<std::io::Error> for Error {
@@ -27,5 +31,11 @@ impl From<std::io::Error> for Error {
 impl From<snap::Error> for Error {
     fn from(err: snap::Error) -> Self {
         Error::Snappy { source: err }
+    }
+}
+
+impl From<lz4_flex::block::DecompressError> for Error {
+    fn from(err: lz4_flex::block::DecompressError) -> Self {
+        Error::Lz4Decompress { source: err }
     }
 }
