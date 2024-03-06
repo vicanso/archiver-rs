@@ -107,12 +107,16 @@ pub async fn unarchive(params: UnarchiveParams) -> Result<(), Error> {
     } else {
         Path::new(&params.target)
     };
+    let mut file_count = 0;
+    let start = SystemTime::now();
+
     while let Some(file) = entries.next().await {
         let mut f = file?;
         let path = f.path()?;
         if !params.file.is_empty() && params.file != path.to_string_lossy() {
             continue;
         }
+        file_count += 1;
 
         let file_path = output.join(path);
         debug!(
@@ -134,6 +138,16 @@ pub async fn unarchive(params: UnarchiveParams) -> Result<(), Error> {
         if !params.file.is_empty() {
             println!("{}", std::string::String::from_utf8_lossy(&buf));
         }
+    }
+    let mut duration = None;
+    if let Ok(d) = SystemTime::now().duration_since(start) {
+        duration = Some(humantime::format_duration(d).to_string());
+    };
+    if params.file.is_empty() {
+        info!(
+            path = output.to_string_lossy().to_string(),
+            file_count, duration
+        );
     }
 
     Ok(())

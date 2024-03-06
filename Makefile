@@ -9,7 +9,7 @@ dev:
 ls:
 	cargo run -- ~/tmp/fonts.gz.tar
 unarchive:
-	cargo run -- ~/tmp/fonts.gz.tar --mode=unarchive --output=~/tmp/fonts-new
+	cargo run -- ~/tmp/fonts.gz.tar --output=~/tmp/fonts-new
 
 release:
 	cargo build --release

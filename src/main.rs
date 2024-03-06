@@ -27,9 +27,9 @@ struct Args {
     /// Source path to archive
     #[arg(short, long)]
     source: Option<String>,
-    /// Archive file save as
+    /// Archive file
     #[arg(short, long)]
-    target: Option<String>,
+    tar: Option<String>,
     /// Level of compress
     #[arg(short, long, default_value_t = 9)]
     level: i32,
@@ -102,6 +102,9 @@ fn parse_args() -> Args {
         args.push(item)
     }
     let mut args = Args::parse_from(args);
+    if args.output.is_some() || args.file.is_some() {
+        args.mode = UNARCHIVE_MODE.to_string();
+    }
     if args.mode != UNARCHIVE_MODE && args.source.clone().unwrap_or_default().is_empty() {
         args.mode = LS_MODE.to_string()
     }
@@ -112,7 +115,7 @@ fn parse_args() -> Args {
 async fn run() -> Result<(), Error> {
     let args = parse_args();
     let source = resolve_path(&args.source.unwrap_or_default());
-    let target = resolve_path(&args.target.unwrap_or_default());
+    let target = resolve_path(&args.tar.unwrap_or_default());
     let output = resolve_path(&args.output.unwrap_or_default());
 
     match args.mode.as_str() {

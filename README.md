@@ -24,3 +24,13 @@ List files from archive file:
 ```bash
 archiver ~/tmp/fonts.gz.tar
 ```
+
+Unarchive files from archive file:
+
+```bash
+archiver ~/tmp/fonts.gz.tar --output=~/tmp/fonts-new
+```
+
+```bash
+archiver ~/tmp/fonts.gz.tar --file=go.mod
+```
