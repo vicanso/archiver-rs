@@ -1,6 +1,6 @@
 [package]
 name = "archiver"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Tree Xie <tree.xie@outlook.com>"]
 edition = "2021"
 keywords = ["archiver", "compress"]
@@ -18,8 +18,8 @@ async-compression = { version = "0.4.6", features = [
     "brotli",
 ] }
 glob = "0.3.1"
-uuid = { version = "1.7.0", features = ["v7", "fast-rng", "macro-diagnostics"] }
-snafu = "0.8.1"
+uuid = { version = "1.8.0", features = ["v7", "fast-rng", "macro-diagnostics"] }
+snafu = "0.8.2"
 tempfile = "3.10.1"
 time = "0.3.34"
 tokio = { version = "1.36.0", features = [
@@ -31,7 +31,7 @@ tokio = { version = "1.36.0", features = [
 tokio-tar = "0.3.1"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["local-time"] }
-clap = { version = "4.5.1", features = ["derive"] }
+clap = { version = "4.5.3", features = ["derive"] }
 path-absolutize = "3.1.1"
 substring = "1.4.5"
 dirs = "5.0.1"
@@ -39,11 +39,11 @@ snap = "1.1.1"
 lz4_flex = "0.11.2"
 humantime = "2.1.0"
 bytesize = "1.3.0"
-tokio-stream = "0.1.14"
+tokio-stream = "0.1.15"
 pad = "0.1.6"
 unix_mode = "0.1.4"
 filetime = "0.2.23"
-chrono = "0.4.34"
+chrono = "0.4.35"
 
 
 [profile.release]
