@@ -1,5 +1,6 @@
 use async_compression::tokio::write::{
-    BrotliDecoder, BrotliEncoder, DeflateEncoder, GzipDecoder, GzipEncoder, ZstdEncoder,
+    BrotliDecoder, BrotliEncoder, DeflateEncoder, GzipDecoder, GzipEncoder, XzDecoder, XzEncoder,
+    ZstdEncoder,
 };
 use async_compression::Level;
 use filetime::{set_file_mtime, FileTime};
@@ -186,4 +187,27 @@ pub async fn lz4_decode(
         write_file_and_mtime(target, buf, file.header()).await?;
     }
     Ok(buf.to_owned())
+}
+
+pub async fn xz_encode(file: &PathBuf, target: &PathBuf, level: i32) -> Result<usize, Error> {
+    let mut w = XzEncoder::with_quality(Vec::new(), Level::Precise(level));
+    compress(file, &mut w).await?;
+    w.shutdown().await?;
+    let size = write_file(target, &w.into_inner()).await?;
+    copy_mtime(file, target).await?;
+    Ok(size)
+}
+
+pub async fn xz_decode(
+    file: &mut Entry<Archive<File>>,
+    target: &Option<PathBuf>,
+) -> Result<Vec<u8>, Error> {
+    let mut w = XzDecoder::new(Vec::new());
+    let _ = copy(file, &mut w).await?;
+    w.shutdown().await?;
+    let buf = w.into_inner();
+    if let Some(target) = target {
+        write_file_and_mtime(target, &buf, file.header()).await?;
+    }
+    Ok(buf)
 }

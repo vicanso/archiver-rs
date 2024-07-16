@@ -18,6 +18,7 @@ const BROTLI: &str = "br";
 const LZ4: &str = "lz4";
 const SNAPPY: &str = "sz";
 const DEFLATE: &str = "zip";
+const XZ: &str = "xz";
 
 fn uuid() -> String {
     let ts = Timestamp::now(NoContext);
@@ -131,6 +132,7 @@ pub async fn unarchive(params: UnarchiveParams) -> Result<(), Error> {
             SNAPPY => compression::snappy_decode(&mut f, filename).await,
             LZ4 => compression::lz4_decode(&mut f, filename).await,
             DEFLATE => compression::deflate_decode(&mut f, filename).await,
+            XZ => compression::xz_decode(&mut f, filename).await,
             _ => Err(Error::InvalidCompression {
                 compression: compress_type.to_string(),
             }),
@@ -212,6 +214,7 @@ pub async fn archive(params: ArchiveParams) -> Result<(), Error> {
             SNAPPY => compression::snappy_encode(&file_path, &file).await,
             LZ4 => compression::lz4_encode(&file_path, &file).await,
             DEFLATE => compression::deflate_encode(&file_path, &file, level).await,
+            XZ => compression::xz_encode(&file_path, &file, level).await,
             _ => Err(Error::InvalidCompression {
                 compression: compress_type.to_string(),
             }),
