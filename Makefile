@@ -5,7 +5,7 @@ fmt:
 	cargo fmt
 
 dev:
-	LOG_LEVEL=debug cargo run -- --source=~/tmp/fonts --target=~/tmp/fonts.gz.tar
+	LOG_LEVEL=debug cargo run -- --source=~/tmp/fonts --tar=~/tmp/fonts.gz.tar
 ls:
 	cargo run -- ~/tmp/fonts.gz.tar
 unarchive:
