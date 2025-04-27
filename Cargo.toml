@@ -5,6 +5,8 @@ authors = ["Tree Xie <tree.xie@outlook.com>"]
 edition = "2021"
 keywords = ["archiver", "compress"]
 license = "Apache-2.0"
+description = "A tool to compress and decompress files and directories"
+readme = "./README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
