@@ -42,7 +42,7 @@ async fn copy_mtime(file: &PathBuf, target: &PathBuf) -> Result<(), Error> {
     Ok(())
 }
 
-async fn compress<'a, W>(file: &PathBuf, writer: &'a mut W) -> Result<u64, Error>
+async fn compress<W>(file: &PathBuf, writer: &mut W) -> Result<u64, Error>
 where
     W: AsyncWrite + Unpin + ?Sized,
 {
