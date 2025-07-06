@@ -1,3 +1,17 @@
+// Copyright 2025 Tree xie.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use chrono::{DateTime, Local};
 use glob::glob;
 use pad::{Alignment, PadStr};
@@ -170,6 +184,11 @@ pub async fn archive(params: ArchiveParams) -> Result<(), Error> {
     let source = params.source;
     let target = params.target;
     let level = params.level;
+    if !Path::new(&source).exists() {
+        return Err(Error::PathNotExists {
+            path: source.clone(),
+        });
+    }
 
     let filename = Path::new(&target)
         .file_name()
@@ -189,6 +208,7 @@ pub async fn archive(params: ArchiveParams) -> Result<(), Error> {
     let mut a = Builder::new(file);
     let mut file_count = 0;
     let start = SystemTime::now();
+    let mut total_size = 0;
 
     for entry in glob(&format!("{source}{}", params.pattern))
         .map_err(|err| Error::Pattern { source: err })?
@@ -199,6 +219,9 @@ pub async fn archive(params: ArchiveParams) -> Result<(), Error> {
             .map_err(|err| Error::StripPrefix { source: err })?;
         if file_path.is_dir() {
             continue;
+        }
+        if let Ok(meta) = file_path.metadata() {
+            total_size += meta.len();
         }
 
         let file = dir.path().join(uuid());
@@ -242,6 +265,7 @@ pub async fn archive(params: ArchiveParams) -> Result<(), Error> {
     info!(
         file = target,
         file_size,
+        total_size = bytesize::ByteSize(total_size).to_string(),
         compression = compress_type,
         level,
         file_count,

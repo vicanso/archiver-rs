@@ -1,22 +1,31 @@
+#!/usr/bin/env cargo run
+
+// Copyright 2025 Tree xie.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+use archiver::Error;
 use clap::Parser;
 use path_absolutize::*;
 use std::path::Path;
-use substring::Substring;
-
 use std::{env, str::FromStr};
+use substring::Substring;
 use tracing::error;
 use tracing::Level;
-
 use tracing_subscriber::FmtSubscriber;
-
-use crate::error::Error;
 
 const LS_MODE: &str = "ls";
 const UNARCHIVE_MODE: &str = "unarchive";
-
-mod archiver;
-mod compression;
-mod error;
 
 /// A tool for archive file as tar, but it will compress each file first.
 /// Simple way for gz.tar, archiver ~/files ~/files.gz.tar.
